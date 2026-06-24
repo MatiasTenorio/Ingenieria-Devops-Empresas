@@ -21,7 +21,7 @@ public class SecurityConfig {
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
         // Endpoint libre para pedir el token sin credenciales
-            .requestMatchers("/auth/login").permitAll()
+            .requestMatchers("/auth/login", "/actuator/prometheus").permitAll()
             .anyRequest().authenticated())
         .addFilterBefore(
             new JwtAuthorizationFilter(),
