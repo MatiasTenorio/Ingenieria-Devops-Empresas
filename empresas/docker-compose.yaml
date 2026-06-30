@@ -1,0 +1,52 @@
+version: "3.8"
+
+networks:
+  loki-net:
+
+services:
+  app-spring:
+    image: 272063219571.dkr.ecr.us-east-1.amazonaws.com/ecr-empresa:latest
+    container_name: mi-spring-app
+    working_dir: /app
+    command: java -jar /app/app.jar
+    volumes:
+      # El contenedor escribe aquí dentro -> carpeta física: ./logs en el host
+      - ./logs:/app/logs
+    ports:
+      # Puerto host:contenedor
+      - "8081:8081"
+    networks:
+      - loki-net
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  loki:
+    image: grafana/loki:2.9.0
+    ports: ["3100:3100"]
+    networks: [loki-net]
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    volumes:
+      # Promtail lee la MISMA carpeta física del host
+      - ./logs:/var/log/app
+      - ./promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks: [loki-net]
+    depends_on: [loki]
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    ports: ["3000:3000"]
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks: [loki-net]
+    depends_on: [loki]
+
+
+    
